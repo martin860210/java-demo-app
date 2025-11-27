@@ -16,7 +16,7 @@ RUN mvn package -DskipTests
 
 
 # Stage 2: Create the final, lightweight runtime image
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jdk
 
 # Set the working directory
 WORKDIR /app
