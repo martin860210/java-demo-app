@@ -1,5 +1,8 @@
 package com.example.demo;
 
+// This class is no longer the primary data carrier from the API.
+// We'll keep it for now as it might be useful for other purposes later,
+// but the data flow is now: API -> GlobalQuote -> StockData -> Frontend.
 public class Stock {
     private String name;
     private String id;
