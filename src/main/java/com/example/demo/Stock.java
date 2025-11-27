@@ -1,55 +1,40 @@
 package com.example.demo;
 
-// This class is no longer the primary data carrier from the API.
-// We'll keep it for now as it might be useful for other purposes later,
-// but the data flow is now: API -> GlobalQuote -> StockData -> Frontend.
+import java.math.BigDecimal;
+
 public class Stock {
-    private String name;
-    private String id;
-    private double changePercent;
-    private String trend; // "up" or "down"
+    private String symbol;
+    private BigDecimal price;
+    private BigDecimal changePercent;
 
-    // Constructors
-    public Stock() {
-    }
-
-    public Stock(String name, String id, double changePercent, String trend) {
-        this.name = name;
-        this.id = id;
+    public Stock(String symbol, BigDecimal price, BigDecimal changePercent) {
+        this.symbol = symbol;
+        this.price = price;
         this.changePercent = changePercent;
-        this.trend = trend;
     }
 
-    // Getters and Setters
-    public String getName() {
-        return name;
+    // Getters and setters
+    public String getSymbol() {
+        return symbol;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
     }
 
-    public String getId() {
-        return id;
+    public BigDecimal getPrice() {
+        return price;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
-    public double getChangePercent() {
+    public BigDecimal getChangePercent() {
         return changePercent;
     }
 
-    public void setChangePercent(double changePercent) {
+    public void setChangePercent(BigDecimal changePercent) {
         this.changePercent = changePercent;
-    }
-
-    public String getTrend() {
-        return trend;
-    }
-
-    public void setTrend(String trend) {
-        this.trend = trend;
     }
 }
