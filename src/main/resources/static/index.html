@@ -14,6 +14,7 @@
         .card-percentage { font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
         .up { color: #2a9d8f; }
         .down { color: #e63946; }
+        .status-message { text-align: center; margin-top: 3rem; font-size: 1.2rem; color: #888; }
     </style>
 </head>
 <body>
@@ -21,13 +22,34 @@
     <div class="container" id="stock-container">
         <!-- Stock cards will be inserted here by JavaScript -->
     </div>
+    <div id="status" class="status-message">Connecting to data stream...</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('stock-container');
+            const statusDiv = document.getElementById('status');
             const eventSource = new EventSource('/api/stocks');
 
+            let receivedData = false;
+
+            // Set a timeout to check if we received any data
+            const noDataTimeout = setTimeout(() => {
+                if (!receivedData) {
+                    statusDiv.textContent = 'The data source is currently unavailable (rate-limited). Please try again later.';
+                    statusDiv.style.color = '#e63946';
+                }
+            }, 5000); // 5 seconds timeout
+
+            eventSource.onopen = function() {
+                console.log("Connection to server opened.");
+                statusDiv.textContent = 'Connection established. Waiting for data...';
+            };
+
             eventSource.onmessage = function(event) {
+                receivedData = true;
+                clearTimeout(noDataTimeout);
+                statusDiv.style.display = 'none'; // Hide status message once we get data
+
                 const stock = JSON.parse(event.data);
 
                 if (!stock || !stock.symbol) return;
@@ -64,13 +86,19 @@
 
             eventSource.onerror = function(error) {
                 console.error('EventSource failed:', error);
-                container.innerHTML = '<p style="color: red; text-align: center;">Failed to load stock data stream. The connection may have been lost or the server is unavailable.</p>';
+                statusDiv.textContent = 'Failed to connect to the server. Please check your connection and refresh the page.';
+                statusDiv.style.color = 'red';
                 eventSource.close();
+                clearTimeout(noDataTimeout);
             };
 
-            eventSource.onopen = function() {
-                console.log("Connection to server opened.");
-            };
+            eventSource.addEventListener('close', function() {
+                 if (!receivedData) {
+                    statusDiv.textContent = 'The data source is currently unavailable (rate-limited). Please try again later.';
+                    statusDiv.style.color = '#e63946';
+                }
+                console.log("Connection to server closed.");
+            });
         });
     </script>
 </body>
