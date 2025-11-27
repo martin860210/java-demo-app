@@ -1,14 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Welcome</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Strategies</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
-        h1 { color: #4CAF50; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 2rem; }
+        h1 { color: #1a2b4d; text-align: center; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin-top: 2rem; }
+        .card { background-color: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 1.5rem; width: 250px; text-align: center; }
+        .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem; }
+        .card-percentage { font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
+        .up { color: #e63946; }
+        .down { color: #2a9d8f; }
     </style>
 </head>
 <body>
-    <h1>Success!</h1>
-    <p>Your Spring Boot application is live.</p>
+    <h1>近期排行</h1>
+    <div class="container" id="stock-container">
+        <!-- Stock cards will be inserted here by JavaScript -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/stocks')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('stock-container');
+                    data.forEach(stock => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+
+                        const title = document.createElement('div');
+                        title.className = 'card-title';
+                        title.textContent = stock.name + (stock.id ? ' ' + stock.id : '');
+
+                        const percentage = document.createElement('div');
+                        const trendClass = stock.changePercent >= 0 ? 'up' : 'down';
+                        const sign = stock.changePercent >= 0 ? '+' : '';
+                        percentage.className = 'card-percentage ' + trendClass;
+                        percentage.textContent = sign + stock.changePercent.toFixed(2) + '%';
+
+                        card.appendChild(title);
+                        card.appendChild(percentage);
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching stock data:', error);
+                    const container = document.getElementById('stock-container');
+                    container.textContent = 'Failed to load stock data.';
+                });
+        });
+    </script>
 </body>
 </html>
