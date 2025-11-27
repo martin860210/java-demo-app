@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Arrays;
@@ -26,8 +27,7 @@ public class DemoApplication {
 
     @GetMapping("/api/stocks")
     public Flux<StockData> getStocks() {
-        // Now we fetch real data for a predefined list of stocks
-        List<String> symbols = Arrays.asList("AAPL", "MSFT", "GOOG");
+        List<String> symbols = Arrays.asList("AAPL", "MSFT", "GOOG", "TSLA", "NVDA"); // Added more stocks
         return stockService.getStocks(symbols);
     }
 }
@@ -35,8 +35,7 @@ public class DemoApplication {
 @Service
 class StockService {
 
-    // Spring will inject the value of the environment variable ALPHAVANTAGE_API_KEY here
-    @Value("${ALPHAVANTAGE_API_KEY}")
+    @Value("${ALPHAVANTAGE_API_KEY:}") // Added default empty value to avoid startup failure if not set
     private String apiKey;
 
     private final WebClient webClient;
@@ -46,11 +45,17 @@ class StockService {
     }
 
     public Flux<StockData> getStocks(List<String> symbols) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.out.println("API Key is not configured. Returning empty flux.");
+            return Flux.empty();
+        }
+
         return Flux.fromIterable(symbols)
+                .delayElements(java.time.Duration.ofSeconds(15)) // Add delay to respect API rate limits (e.g., 5 calls/min)
                 .flatMap(this::fetchStockData);
     }
 
-    private Flux<StockData> fetchStockData(String symbol) {
+    private Mono<StockData> fetchStockData(String symbol) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/query")
                         .queryParam("function", "GLOBAL_QUOTE")
@@ -59,7 +64,15 @@ class StockService {
                         .build())
                 .retrieve()
                 .bodyToMono(GlobalQuote.class)
-                .map(GlobalQuote::getStockData)
-                .flux();
+                .flatMap(globalQuote -> {
+                    // Defensive check: Alpha Vantage returns an empty object or a note on rate limiting.
+                    if (globalQuote != null && globalQuote.getStockData() != null && globalQuote.getStockData().getSymbol() != null) {
+                        return Mono.just(globalQuote.getStockData());
+                    }
+                    // If data is invalid or we hit a rate limit, return an empty Mono.
+                    // This prevents the NullPointerException and allows the stream to continue.
+                    return Mono.empty();
+                })
+                .doOnError(error -> System.err.println("Error fetching stock data for " + symbol + ": " + error.getMessage()));
     }
 }
